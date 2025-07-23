@@ -1,5 +1,20 @@
 #include "TextBuffer.h"
 
+//------------------helper function--------------------
+template<typename T>
+void addToArr(T* &arr, T data, int new_size) {
+    T* newArr = new T[new_size]();
+    if (arr != nullptr) {
+        for(int i = 0; i < new_size; i++)  {
+            newArr[i] = arr[i];
+        }
+    }
+    newArr[new_size-1] = data;
+    delete [] arr;
+    arr = newArr;
+    return;
+}
+
 // ----------------- DoublyLinkedList -----------------
 template <typename T>
 DoublyLinkedList<T>::DoublyLinkedList() {
