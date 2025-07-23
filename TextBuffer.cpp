@@ -3,23 +3,34 @@
 // ----------------- DoublyLinkedList -----------------
 template <typename T>
 DoublyLinkedList<T>::DoublyLinkedList() {
-    // TODO
+    this -> head = nullptr;
+    this -> tail = nullptr;
+    this -> count = 0;
 }
 
 template <typename T>
 DoublyLinkedList<T>::~DoublyLinkedList() {
-    // TODO
+    while (this-> head != nullptr) {
+        Node<T>* nextNode = this -> head -> next;
+        delete this-> head;
+        this -> head = nextNode;
+    }
+    this-> tail = nullptr;
+    this-> count = 0;
 }
 
 // TODO: implement other methods of DoublyLinkedList
 
 // ----------------- TextBuffer -----------------
 TextBuffer::TextBuffer() {
-    // TODO
+    this-> buffer = DoublyLinkedList<char>();
+    this-> cursorPos = 0;
+    this-> History = new HistoryManager();
 }
 
 TextBuffer::~TextBuffer() {
-    // TODO
+    delete this->History;
+    this->History= nullptr;
 }
 
 // TODO: implement other methods of TextBuffer
