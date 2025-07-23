@@ -482,6 +482,62 @@ TextBuffer::HistoryManager::~HistoryManager() {
 }
 
 //TODO: implement other methods of HistoryManager
+Action TextBuffer::HistoryManager::undoAction() {
+    if (this->HistoryActions.size() > 0) {
+        Action Act = this->HistoryActions.getTail()->data;
+        this->HistoryActions.removeTail();
+        this-> UndoAction.insertAtTail(Act);
+        return Act;
+    }
+    return Action();
+}
+
+Action TextBuffer::HistoryManager::redoAction() { 
+    if (this->UndoAction.size() > 0) {
+        Action Act = this->UndoAction.getTail()->data;
+        this-> UndoAction.removeTail();
+        this-> HistoryActions.insertAtTail(Act);
+        return Act;
+    }
+    return Action();
+}
+
+void TextBuffer::HistoryManager::addAction(const string &actionName, int cursorPos, char c) {
+    HistoryActions.insertAtTail(Action(actionName, cursorPos, c));
+}
+
+void TextBuffer::HistoryManager::clearRedo() {
+    while (this-> UndoAction.size() > 0) {
+        this->UndoAction.removeTail();
+    }
+}
+
+void TextBuffer::HistoryManager::printHistory() const {
+    cout << "[";
+    Node<Action>* current = HistoryActions.getHead();
+    while (current != nullptr) {
+        const Action& a = current->data;
+        cout << "(" << a.name << ", " << a.cursorPos << ", " << a.c << ")";
+        current = current->next;
+        if (current != nullptr) cout << ", ";
+    }
+    cout << "]" << endl;
+}
+
+int TextBuffer::HistoryManager::size() const {
+    return HistoryActions.size();
+}
+
+Action::Action() {
+    name = "";
+    cursorPos = -1;
+    c = '\0';
+}
+Action::Action(string name, int pos, char c)
+    : name(name), cursorPos(pos), c(c) {}
+
+Action::~Action() {};
+
 
 
 // Explicit template instantiation for char, string, int, double, float, and Point
