@@ -10,6 +10,13 @@
 
 using namespace std;
 
+// ANSI color codes
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BOLD    "\033[1m"
+
 struct TestCase {
     string name;
     function<string()> func;
@@ -24,7 +31,6 @@ void REGISTER_SAMPLE(function<void()> sample, string expected, string name) {
     test_cases.push_back({
         name,
         [=]() {
-            // Redirect cout to capture output
             streambuf* old_buf = cout.rdbuf();
             ostringstream output;
             cout.rdbuf(output.rdbuf());
@@ -48,30 +54,30 @@ void TEST_RUNNER() {
         string exp = test.expected;
 
         if (got == exp) {
-            cout << "[PASS] " << test.name << '\n';
+            cout << GREEN << "[PASS] " << RESET << test.name << '\n';
         } else {
             test_fail++;
             failed_tests.push_back({test.name, {exp, got}});
-            cout << "[FAIL] " << test.name << '\n';
+            cout << RED << "[FAIL] " << RESET << test.name << '\n';
         }
     }
 
-    // In chi tiết những test bị fail sau khi đã chạy hết
     if (!failed_tests.empty()) {
-        cout << "\n=== Failed Details ===\n";
-        cout << string(40, '-') << '\n';
+        cout << '\n' << BOLD << YELLOW << "=== Failed Details ===\n" << string(40, '-') << RESET << '\n';
         for (const auto& fail : failed_tests) {
-            cout << "Test: " << fail.first << "\n\n";
-            cout << "Expected | Got:\n\n";
-            cout << fail.second.first << '\n';
-            cout << fail.second.second << "\n\n";
+            cout << BOLD << "Test: " << fail.first << RESET << "\n\n";
+            cout << BOLD << GREEN "Expected "<< RESET << "|" << RED << " Got:\n\n" << RESET;
+            cout << GREEN << fail.second.first << RESET << '\n';
+            cout << RED << fail.second.second << RESET << "\n\n";
             cout << string(40, '-') << '\n';
         }
     }
 
-    cout << "\nTotal: " << test_total
+    cout << '\n' << BOLD
+         << "Total: " << test_total
          << ", Passed: " << (test_total - test_fail)
-         << ", Failed: " << test_fail << '\n';
+         << ", Failed: " << test_fail
+         << RESET << '\n';
 }
 
 #endif
