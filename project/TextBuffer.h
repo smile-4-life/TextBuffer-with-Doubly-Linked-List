@@ -79,6 +79,9 @@ public:
     void deleteAllOccurrences(char c);
     void undo();
     void redo();
+    void printHistory() const {
+        historyManager->printHistory();
+    }
 
 public:
     class HistoryManager {
@@ -104,7 +107,7 @@ public:
         DoublyLinkedList<int> indexJump;
     };
 
-public:
+private:
     DoublyLinkedList<char> buffer; 
     int cursorPos;
     HistoryManager* History;
