@@ -104,7 +104,7 @@ public:
         DoublyLinkedList<int> indexJump;
     };
 
-public:
+private:
     DoublyLinkedList<char> buffer; 
     int cursorPos;
     HistoryManager* History;
