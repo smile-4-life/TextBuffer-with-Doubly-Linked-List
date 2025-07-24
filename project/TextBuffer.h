@@ -79,6 +79,9 @@ public:
     void deleteAllOccurrences(char c);
     void undo();
     void redo();
+    void printHistory() const {
+        historyManager->printHistory();
+    }
 
 public:
     class HistoryManager {
