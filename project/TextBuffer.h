@@ -58,6 +58,7 @@ public:
     //set
     void setHead(Node<T>* node);
     void setTail(Node<T>* node);
+    void decrementCount();
     void removeTail();
 };
 
@@ -110,7 +111,7 @@ public:
 private:
     DoublyLinkedList<char> buffer; 
     int cursorPos;
-    HistoryManager* History;
+    HistoryManager* historyManager;
 };
 
 #endif // __TEXT_BUFFER_H__
