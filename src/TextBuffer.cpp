@@ -1,20 +1,5 @@
 #include "TextBuffer.h"
 
-//------------------helper function--------------------
-template<typename T>
-void addToArr(T* &arr, T data, int new_size) {
-    T* newArr = new T[new_size]();
-    if (arr != nullptr) {
-        for(int i = 0; i < new_size; i++)  {
-            newArr[i] = arr[i];
-        }
-    }
-    newArr[new_size-1] = data;
-    delete [] arr;
-    arr = newArr;
-    return;
-}
-
 // ----------------- DoublyLinkedList -----------------
 template <typename T>
 DoublyLinkedList<T>::DoublyLinkedList() {
@@ -45,6 +30,13 @@ void DoublyLinkedList<T>::setHead(Node<T>* node) {
 template <typename T>
 void DoublyLinkedList<T>::setTail(Node<T>* node) {
     this->tail = node;
+}
+
+template <typename T>
+void DoublyLinkedList<T>::decrementCount() {
+    if (this->count > 0) {
+        this->count--;
+    }
 }
 
 //insert
@@ -243,19 +235,19 @@ string DoublyLinkedList<T>::toString(string(*convert2str)(T&)) const {
 TextBuffer::TextBuffer() {
     this-> buffer = DoublyLinkedList<char>();
     this-> cursorPos = 0;
-    this-> History = new HistoryManager();
+    this-> historyManager = new HistoryManager();
 }
 
 TextBuffer::~TextBuffer() {
-    delete this->History;
-    this->History= nullptr;
+    delete this->historyManager;
+    this->historyManager= nullptr;
 }
 
 // TODO: implement other methods of TextBuffer
 void TextBuffer::insert(char c) {
     this->buffer.insertAt(this-> cursorPos, c);
-    this->History->clearRedo();
-    this->History->addAction("insert", this->cursorPos, c);
+    this->historyManager->clearRedo();
+    this->historyManager->addAction("insert", this->cursorPos, c);
     this-> cursorPos++;
     return;
 }
@@ -264,13 +256,13 @@ void TextBuffer::deleteChar() {
     int deletedIndex = --this->cursorPos;
     char deletedChar = this->buffer.get(deletedIndex);
     buffer.deleteAt(deletedIndex);
-    this->History->clearRedo();
-    this->History->addAction("delete", deletedIndex+1, deletedChar);
+    this->historyManager->clearRedo();
+    this->historyManager->addAction("delete", deletedIndex+1, deletedChar);
     return;
 }
 
 void TextBuffer::moveCursorLeft() {
-    this->History->addAction("move", this->cursorPos, 'L');
+    this->historyManager->addAction("move", this->cursorPos, 'L');
 
     if (this-> cursorPos == 0)
         throw cursor_error();
@@ -279,7 +271,7 @@ void TextBuffer::moveCursorLeft() {
 }
 
 void TextBuffer::moveCursorRight() {
-    this->History->addAction("move", this->cursorPos, 'R');
+    this->historyManager->addAction("move", this->cursorPos, 'R');
 
     if (this-> cursorPos == this-> buffer.size())
         throw cursor_error();
@@ -290,9 +282,9 @@ void TextBuffer::moveCursorRight() {
 void TextBuffer::moveCursorTo(int index) {
     if (index < 0 || index > this-> buffer.size())
         throw out_of_range("Index is invalid!");
-    this->History->addAction("move", this->cursorPos, 'J');
+    this->historyManager->addAction("move", this->cursorPos, 'J');
     this-> cursorPos = index;
-    this->History->indexJump.insertAtTail(index);
+    this->historyManager->indexJump.insertAtTail(index);
     return;
 }
 
@@ -316,16 +308,28 @@ int TextBuffer::findFirstOccurrence(char c) const {
 
 int* TextBuffer:: findAllOccurrences(char c, int&count) const {
     count = 0;
-    int* arr = nullptr;
-    Node<char>* current = this-> buffer.getHead();
-    int currentIndex = 0;
-    while(current != nullptr) {
-        if(current-> data == c) {
-            addToArr(arr, currentIndex, ++count);
+    Node<char>* current = this->buffer.getHead();
+    while (current != nullptr) {
+        if (current->data == c) {
+            count++;
         }
-        current = current-> next;
+        current = current->next;
+    }
+
+    if (count == 0) return nullptr;
+
+    int* arr = new int[count];
+    current = this->buffer.getHead();
+    int currentIndex = 0;
+    int i = 0;
+    while (current != nullptr) {
+        if (current->data == c) {
+            arr[i++] = currentIndex;
+        }
+        current = current->next;
         currentIndex++;
     }
+
     return arr;
 }
 
@@ -394,9 +398,9 @@ Node<T>* DoublyLinkedList<T>::mergeSort(Node<T>* head) {
 
 void TextBuffer::sortAscending() {
     string snapShot = this->getContent();
-    this->History->snapShot.insertAtTail(snapShot);
+    this->historyManager->snapShot.insertAtTail(snapShot);
 
-    this->History->addAction("sort", this->cursorPos, '\0');
+    this->historyManager->addAction("sort", this->cursorPos, '\0');
     if (this->buffer.size() <= 1) return;
 
     // Gọi merge sort
@@ -415,23 +419,46 @@ void TextBuffer::sortAscending() {
 ///// END SORT
 
 void TextBuffer::deleteAllOccurrences(char c) {
-    Node<char>* current = this->buffer.getHead();
+    Node<char>* current = buffer.getHead();
     int index = 0;
-    while(current != nullptr) {
-        Node<char>* nextNode = current-> next;
+    
+    while (current != nullptr) {
+        Node<char>* nextNode = current->next;
+    
         if (current->data == c) {
-            this->buffer.deleteAt(index);
-            this->cursorPos--;
-        }
-        else {
+            cursorPos = 0;
+            if (current == buffer.getHead()) {
+                buffer.setHead(current->next);
+                if (buffer.getHead() == nullptr) {
+                    buffer.setTail(nullptr);
+                } else {
+                    buffer.getHead()->prev = nullptr;
+                }
+            }
+            else if (current == buffer.getTail()) {
+                buffer.setTail(current->prev);
+                if (buffer.getTail() != nullptr) {
+                    buffer.getTail()->next = nullptr;
+                }
+            }
+            else {
+                current->prev->next = current->next;
+                current->next->prev = current->prev;
+            }
+            
+            Node<char>* toDelete = current;
+            delete toDelete;
+
+        } else {
             index++;
         }
+        
         current = nextNode;
     }
 }
 
 void TextBuffer::undo() {
-    Action C = this->History->undoAction();
+    Action C = this->historyManager->undoAction();
     if (C.name == "insert") {
         this->buffer.deleteAt(C.cursorPos);
     }   
@@ -442,9 +469,9 @@ void TextBuffer::undo() {
 
     }
     if (C.name == "sort") {
-        Node<string>* SnapShot = this->History->snapShot.getTail();
+        Node<string>* SnapShot = this->historyManager->snapShot.getTail();
         string snapShot = SnapShot->data;
-        this->History->snapShot.removeTail();
+        this->historyManager->snapShot.removeTail();
         int i = 0;
         Node<char>* current = this->buffer.getHead();
         while(i < snapShot.length()) {
@@ -460,7 +487,7 @@ void TextBuffer::undo() {
 }
 
 void TextBuffer::redo() {
-    Action C = this->History->redoAction();
+    Action C = this->historyManager->redoAction();
     char c = C.c;
     if (C.name == "insert") {
         this->buffer.insertAt(C.cursorPos, c);
@@ -473,9 +500,9 @@ void TextBuffer::redo() {
     if (C.name == "move") {
         if (C.c == 'L') this->cursorPos = C.cursorPos - 1;
         else if (C.c == 'R') this->cursorPos = C.cursorPos + 1;
-        else {
-            Node<int>* indexNode = this->History->indexJump.getTail();
-            this->History->indexJump.removeTail();
+        else if (C.c == 'J') {
+            Node<int>* indexNode = this->historyManager->indexJump.getTail();
+            this->historyManager->indexJump.removeTail();
             this->cursorPos = indexNode->data;
         }
     }
